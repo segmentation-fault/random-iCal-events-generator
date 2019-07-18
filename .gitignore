@@ -10,5 +10,6 @@
 !.gitignore
 !requirements.txt
 !Churchill.pickle
+!*.ics
 #ignore venv
 *venv*
