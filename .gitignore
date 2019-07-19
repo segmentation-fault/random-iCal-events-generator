@@ -9,7 +9,8 @@
 !*.md
 !.gitignore
 !requirements.txt
-!Churchill.pickle
+!*.pickle
 !*.ics
 #ignore venv
 *venv*
+norep*

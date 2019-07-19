@@ -21,10 +21,13 @@ from datetime import datetime, timedelta
 from faker import Faker
 from markov_text_gen import MarkovTextGen
 from types import LambdaType
+import sys
 
 
 class RandomEvents(object):
-    def __init__(self, date_start: str, date_end: str, date_format: str, f_duration: LambdaType, markov_gen: MarkovTextGen, my_locale: str = 'sv_SE',
+    def __init__(self, date_start: str, date_end: str, date_format: str, f_duration: LambdaType,
+                 markov_gen_titles: MarkovTextGen,
+                 markov_gen_description: MarkovTextGen, my_locale: str = 'sv_SE',
                  max_words_description: int = 200) -> object:
         """
         This object creates a series of random events, with random start times, names, locations, urls, and descriptions.
@@ -32,7 +35,8 @@ class RandomEvents(object):
         :param date_end: string representing the end date of all the events, formatted according to the date_format provided
         :param date_format: format of the dates provided, compatible with datetime.strptime; e.g. '%m/%d/%Y %I:%M %p %z'.
         :param f_duration: function giving the duration of the event in seconds, when called. no arguments needed; e.g. lambda: int(2 * 3600 * random.random())
-        :param markov_gen: MarkovTextGen object, used to generate names and titles for the events
+        :param markov_gen_titles: MarkovTextGen object, used to generate titles for the events
+        :param markov_gen_description: MarkovTextGen object, used to generate descritption for the events
         :param my_locale: locale, compatible with faker (https://faker.readthedocs.io/en/master/index.html#localization)
         :param max_words_description: maximum number of words per description
         """
@@ -42,7 +46,8 @@ class RandomEvents(object):
         self.date_end = datetime.strptime(date_end, date_format)
         self.f_duration = f_duration
         self.fake = Faker(my_locale)
-        self.markov_gen = markov_gen
+        self.markov_gen_titles = markov_gen_titles
+        self.markov_gen_descriptions = markov_gen_description
         self.max_words = max_words_description
 
     def __get_rnd_date__(self) -> datetime:
@@ -81,10 +86,10 @@ class RandomEvents(object):
         return self.fake.uri()
 
     def get_rnd_title(self) -> str:
-        return self.markov_gen.get_rnd_text_until(b'.')
+        return self.markov_gen_titles.get_rnd_text_until('.')
 
     def get_rnd_description(self) -> str:
-        return self.markov_gen.get_rnd_text(random.randint(1, self.max_words))
+        return self.markov_gen_descriptions.get_rnd_text(random.randint(1, self.max_words))
 
     def save_ics_file(self, ics_file: str, n_events: int = 50) -> None:
         """
@@ -94,6 +99,10 @@ class RandomEvents(object):
         """
         c = Calendar()
         for i in range(0, n_events):
+
+            sys.stdout.write("\rCreating event %i of %i" % (i, n_events))
+            sys.stdout.flush()
+
             e = Event()
             e.name = self.get_rnd_title()
             (start, end, duration, created) = self.get_rnd_event_time()
@@ -109,15 +118,22 @@ class RandomEvents(object):
         with open(ics_file, 'w') as f:
             f.writelines(c)
 
+        sys.stdout.write("\rDone")
+        sys.stdout.flush()
+
 
 if __name__ == "__main__":
     # Duration uniformly distributed between 0 and 2 hours
     f_duration = lambda: int(2 * 3600 * random.random())
 
-    # Markov text generator preloaded from pickle
-    M = MarkovTextGen()
-    M.load_dictionary("Churchill.pickle")
+    # Markov text generators preloaded from pickle
+    M_titles = MarkovTextGen()
+    M_titles.load_dictionary("my_titles.pickle")
 
-    R = RandomEvents("1/1/2015 1:30 PM +0200", "1/1/2022 4:50 AM +0200", '%m/%d/%Y %I:%M %p %z', f_duration, M)
+    M_descriptions = MarkovTextGen()
+    M_descriptions.load_dictionary("my_descriptions.pickle")
+
+    R = RandomEvents("1/1/2015 1:30 PM +0200", "1/1/2022 4:50 AM +0200", '%m/%d/%Y %I:%M %p %z', f_duration, M_titles,
+                     M_descriptions)
 
     R.save_ics_file("example.ics", 25)

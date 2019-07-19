@@ -43,7 +43,16 @@ class MarkovTextGen(object):
         Thanks to: https://towardsdatascience.com/simulating-text-with-markov-chains-in-python-1a27e6d13fc6
         :param my_file (file object): txt file to read
         """
-        self.corpus = my_file.read().split()
+        f_cont = my_file.read()
+        #Check if ASCII
+        try:
+            f_cont.decode('ascii')
+        except UnicodeDecodeError:
+            f_cont = f_cont.decode("utf-8")
+        else:
+            pass
+
+        self.corpus = f_cont.split()
         pairs = self.__make_pairs__()
 
         for word_1, word_2 in pairs:
@@ -73,7 +82,7 @@ class MarkovTextGen(object):
         sentenz = prefix + " "
 
         for i in range(0, len(chain)):
-            sentenz += str(chain[i].decode('UTF-8')) + " "
+            sentenz += str(chain[i]) + " "
 
         return sentenz + suffix
 
@@ -91,7 +100,7 @@ class MarkovTextGen(object):
 
         chain = [first_word]
 
-        last_word = b''
+        last_word = ''
         i = 0
 
         while last_word.find(termin_char) < 0 and i < max_words:
@@ -102,7 +111,7 @@ class MarkovTextGen(object):
         sentenz = " "
 
         for i in range(0, len(chain)):
-            sentenz += str(chain[i].decode('UTF-8')) + " "
+            sentenz += str(chain[i]) + " "
 
         return sentenz
 
